@@ -13,6 +13,8 @@ var Click = require('./app/models/click');
 
 var app = express();
 
+app.set('signup', __dirname + '/signup');
+app.set('login', __dirname + '/login');
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -25,7 +27,9 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/', 
 function(req, res) {
-  res.render('index');
+  //if user logged in send to index
+  res.render('login');
+  //else sent to login page
 });
 
 app.get('/create', 
@@ -75,9 +79,46 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+app.get('/login', function(req, res) {
+  res.render('login');
+})
+ 
+app.post('/login', function(req, res) {
+  console.log(req.body.username);
+})
 
+app.get('/signup', function(req, res) {
+  res.render('signup');
+})
 
+app.post('/signup', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password
+  new User({username: username, password: password}).fetch().then(function(found) {
+    if (found) {
+      console.log('USER EXISTS!');
+    } else {
+      //hashpasswordfunction
+      Users.create({
+        username: username,
+        password: password
+      })
+      .then(function(result) {
+        console.log('result from user creation ', result)
+        res.render('links');
+      })
+    }
+  })
+})
 
+/*
+new Book({'ISBN-13': '9780440180296'})
+.fetch()
+.then(function(model) {
+  // outputs 'Slaughterhouse Five'
+  console.log(model.get('title'));
+});
+*/
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
