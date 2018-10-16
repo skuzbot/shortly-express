@@ -2,7 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -13,7 +13,7 @@ var Click = require('./app/models/click');
 
 var app = express();
 
-app.set('signup', __dirname + '/signup')
+app.set('signup', __dirname + '/signup');
 app.set('login', __dirname + '/login');
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -23,29 +23,45 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+app.use(
+  session({
+    name: 'user',
+    secret: 'secret stuff',
+    saveUninitialized: false
+  })
+);
 
-
-app.get('/', 
-function(req, res) {
-  //if user logged in send to index
-  res.render('login');
+app.get('/', function(req, res) {
+  if (req.session.user) {
+    res.render('index');
+  } else {
+    res.redirect('login');
+  }
   //else sent to login page
 });
 
-app.get('/create', 
-function(req, res) {
-  res.render('index');
+app.get('/create', function(req, res) {
+  if (req.session.user) {
+    res.render('index');
+  } else {
+    res.redirect('login');
+  }
 });
 
-app.get('/links', 
-function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
-  });
+app.get('/links', function(req, res) {
+  if (req.session.user) {
+    Links.reset()
+      .fetch()
+      .then(function(links) {
+        //res.redirect('index');
+        res.status(200).send(links.models);
+      });
+  } else {
+    res.redirect('login');
+  }
 });
 
-app.post('/links', 
-function(req, res) {
+app.post('/links', function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
@@ -55,7 +71,6 @@ function(req, res) {
 
   new Link({ url: uri }).fetch().then(function(found) {
     if (found) {
-      console.log('found attributes ', found.attributes.code)
       res.status(200).send(found.attributes);
     } else {
       util.getUrlTitle(uri, function(err, title) {
@@ -68,8 +83,7 @@ function(req, res) {
           url: uri,
           title: title,
           baseUrl: req.headers.origin
-        })
-        .then(function(newLink) {
+        }).then(function(newLink) {
           res.status(200).send(newLink);
         });
       });
@@ -82,45 +96,55 @@ function(req, res) {
 /************************************************************/
 app.get('/login', function(req, res) {
   res.render('login');
-})
- 
+});
+
 app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
+
   new User({ username: username, password: password })
-    .fetch().then(function(found) {
+    .fetch()
+    .then(function(found) {
       if (found) {
-        res.redirect('create');
+        req.session.regenerate(function() {
+          req.session.user = username;
+          res.redirect('/');
+        });
       } else {
-        res.redirect("login");
+        res.redirect('/login');
       }
-    })
-})
+    });
+});
 
 app.get('/signup', function(req, res) {
   res.render('signup');
-})
+});
 
 app.post('/signup', function(req, res) {
   var username = req.body.username;
-  var password = req.body.password
-  new User({username: username}).fetch().then(function(found) {
+  var password = req.body.password;
+  new User({ username: username }).fetch().then(function(found) {
     if (found) {
       console.log('USER EXISTS!');
-      res.redirect('/login');
+      res.redirect('/');
     } else {
       //hashpasswordfunction
       Users.create({
         username: username,
-        password: password    //need to hash
-      })
-      .then(function(result) {
-        //console.log('result from user creation ', result)
-        res.redirect('create');
-      })
+        password: password //need to hash
+      }).then(function(result) {
+        req.session.regenerate(function() {
+          req.session.user = username;
+          res.redirect('/');
+        });
+      });
     }
-  })
-})
+  });
+});
+
+app.post('/logout', function(req, res) {
+  delete req.session.user;
+});
 
 /*
 new Book({'ISBN-13': '9780440180296'})
