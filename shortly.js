@@ -3,7 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
-var bcrypt = require("bcrypt-nodejs");
+var bcrypt = require('bcrypt-nodejs');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -111,10 +111,10 @@ app.post('/login', function(req, res) {
       if (found && bcrypt.compareSync(password, found.attributes.password)) {
         req.session.regenerate(function() {
           req.session.user = username;
-          res.redirect("/");
+          res.redirect('/');
         });
       } else {
-        res.redirect("/login");
+        res.redirect('/login');
       }
     });
 });
