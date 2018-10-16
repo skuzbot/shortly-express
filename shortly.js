@@ -13,7 +13,7 @@ var Click = require('./app/models/click');
 
 var app = express();
 
-app.set('signup', __dirname + '/signup');
+app.set('signup', __dirname + '/signup')
 app.set('login', __dirname + '/login');
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -55,6 +55,7 @@ function(req, res) {
 
   new Link({ url: uri }).fetch().then(function(found) {
     if (found) {
+      console.log('found attributes ', found.attributes.code)
       res.status(200).send(found.attributes);
     } else {
       util.getUrlTitle(uri, function(err, title) {
@@ -84,7 +85,16 @@ app.get('/login', function(req, res) {
 })
  
 app.post('/login', function(req, res) {
-  console.log(req.body.username);
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({ username: username, password: password })
+    .fetch().then(function(found) {
+      if (found) {
+        res.redirect('create');
+      } else {
+        res.redirect("login");
+      }
+    })
 })
 
 app.get('/signup', function(req, res) {
@@ -94,18 +104,19 @@ app.get('/signup', function(req, res) {
 app.post('/signup', function(req, res) {
   var username = req.body.username;
   var password = req.body.password
-  new User({username: username, password: password}).fetch().then(function(found) {
+  new User({username: username}).fetch().then(function(found) {
     if (found) {
       console.log('USER EXISTS!');
+      res.redirect('/login');
     } else {
       //hashpasswordfunction
       Users.create({
         username: username,
-        password: password
+        password: password    //need to hash
       })
       .then(function(result) {
-        console.log('result from user creation ', result)
-        res.render('links');
+        //console.log('result from user creation ', result)
+        res.redirect('create');
       })
     }
   })

@@ -10,11 +10,11 @@ var Link = require('../app/models/link');
 
 /************************************************************/
 // Mocha doesn't have a way to designate pending before blocks.
-// Mimic the behavior of xit and xdescribe with .
+// Mimic the behavior of xit and xdescribe with xbeforeEach.
 // Remove the 'x' from beforeEach block when working on
 // authentication tests.
 /************************************************************/
-var beforeEach = function() {};
+var xbeforeEach = function() {};
 /************************************************************/
 
 
@@ -32,7 +32,7 @@ describe('', function() {
     server.close();
   });
 
-  beforeEach(function() {
+  xbeforeEach(function() {
     // log out currently signed in user
     request('http://127.0.0.1:4568/logout', function(error, res, body) {});
 
@@ -53,10 +53,10 @@ describe('', function() {
       .del()
       .catch(function(error) {
         // uncomment when writing authentication tests
-        throw {
-          type: 'DatabaseError',
-          message: 'Failed to create test setup data'
-        };
+        // throw {
+        //   type: 'DatabaseError',
+        //   message: 'Failed to create test setup data'
+        // };
       });
 
     // delete user Phillip from db so it can be created later for the test
@@ -65,10 +65,10 @@ describe('', function() {
       .del()
       .catch(function(error) {
         // uncomment when writing authentication tests
-        throw {
-          type: 'DatabaseError',
-          message: 'Failed to create test setup data'
-        };
+        // throw {
+        //   type: 'DatabaseError',
+        //   message: 'Failed to create test setup data'
+        // };
       });
   });
 
@@ -76,7 +76,7 @@ describe('', function() {
 
     var requestWithSession = request.defaults({jar: true});
 
-    (function(done) {
+    xbeforeEach(function(done) {
       // create a user that we can then log-in with
       new User({
         'username': 'Phillip',
@@ -251,7 +251,7 @@ describe('', function() {
 
   }); // 'Priviledged Access'
 
-  describe('Account Creation:', function() {
+  xdescribe('Account Creation:', function() {
 
     it('Signup creates a user record', function(done) {
       var options = {
@@ -299,7 +299,7 @@ describe('', function() {
 
   }); // 'Account Creation'
 
-  describe('Account Login:', function() {
+  xdescribe('Account Login:', function() {
 
     var requestWithSession = request.defaults({jar: true});
 
