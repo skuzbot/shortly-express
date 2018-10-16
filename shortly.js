@@ -3,6 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+var bcrypt = require("bcrypt-nodejs");
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -16,6 +17,7 @@ var app = express();
 app.set('signup', __dirname + '/signup');
 app.set('login', __dirname + '/login');
 app.set('views', __dirname + '/views');
+app.set('logout', __dirname + '/logout');
 app.set('view engine', 'ejs');
 app.use(partials());
 // Parse JSON (uniform resource locators)
@@ -53,7 +55,7 @@ app.get('/links', function(req, res) {
     Links.reset()
       .fetch()
       .then(function(links) {
-        //res.redirect('index');
+        
         res.status(200).send(links.models);
       });
   } else {
@@ -101,17 +103,18 @@ app.get('/login', function(req, res) {
 app.post('/login', function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
+  
 
-  new User({ username: username, password: password })
+  new User({ username: username})
     .fetch()
     .then(function(found) {
-      if (found) {
+      if (found && bcrypt.compareSync(password, found.attributes.password)) {
         req.session.regenerate(function() {
           req.session.user = username;
-          res.redirect('/');
+          res.redirect("/");
         });
       } else {
-        res.redirect('/login');
+        res.redirect("/login");
       }
     });
 });
@@ -133,6 +136,8 @@ app.post('/signup', function(req, res) {
         username: username,
         password: password //need to hash
       }).then(function(result) {
+
+        //console.log('result :', result);
         req.session.regenerate(function() {
           req.session.user = username;
           res.redirect('/');
@@ -142,8 +147,9 @@ app.post('/signup', function(req, res) {
   });
 });
 
-app.post('/logout', function(req, res) {
-  delete req.session.user;
+app.get('/logout', function(req, res) {
+  req.session.destroy();
+  res.redirect('login');
 });
 
 /*
